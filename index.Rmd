@@ -1,0 +1,350 @@
+---
+title: "Handling Massive Collection of Time Series Data with Feature Engineering"
+subtitle: "International Water Management Institute (IWMI)"
+author: "Thiyanga S. Talagala"
+date: "`r Sys.Date()`"
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    css: 
+      - default
+      - default-fonts
+      - libs/cc-fonts.css
+      - libs/figure-captions.css
+      - xaringan-themer.css
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+      ratio: '16:9'
+---
+```{r xaringan-themer, include=FALSE, warning=FALSE}
+library(xaringanthemer)
+style_mono_accent(
+  base_color = "#081d58",
+  text_bold_color = "#ce1256",
+  title_slide_text_color = "#edf8b1",
+  header_font_google = google_font("Josefin Sans"),
+  base_font_size = "20px",
+  text_font_size = "1.5rem",
+  code_font_size = "1rem"
+ #text_font_google   = google_font("Montserrat", "300", "300i")
+ # code_font_google   = google_font("Fira Mono")
+)
+```
+
+
+```{r setup, include=FALSE}
+library(knitr)
+options(htmltools.dir.version = FALSE)
+#read_chunk("src/main.R")
+library(ggplot2)
+library(patchwork)
+library(reshape2)
+library(grid)
+library(gridExtra)
+library(ggrepel)
+library(png)
+library(tsfeatures)
+library(tidyverse)
+library(ggpubr)
+library(RColorBrewer)
+library(dplyr)
+library(forecast)
+library(tidyr)
+library(rlang)
+library(tidyverse)
+library(tsfeatures)
+```
+
+# About me
+
+- PhD in Statistics and Mathematics, Monash University, Australia
+
+--
+- Senior Lecturer, Department of Statistics, University of Sri Jayewardenepura
+
+--
+- Co-founder and Co-organizer, R Ladies-Colombo
+
+--
+- Coordinator, Statistical Consultancy Service, University of Sri Jayewardenepura
+
+--
+- Founder and lead maintainer, [Dengue Data Hub](https://denguedatahub.netlify.app/)
+
+--
+
+Current research interests: Time Series Analysis, Data Visualization, Machine Learning, Machine Learning Interpretability,
+Algorithm Selection
+
+--
+
+November, 2023 highlights: [#30DayMapChallenge](https://30daymapchallenge.com/)
+
+
+---
+class: middle, center,
+
+# Handling Massive Collection of 
+# Time Series Data with 
+# Feature Engineering
+
+---
+
+class: middle, center,
+
+# Handling **Massive Collection** of 
+# Time Series Data with 
+# Feature Engineering
+
+---
+class: middle, center
+
+# Handling **Massive Collection** of 
+# **Time Series Data** with 
+# Feature Engineering
+
+
+---
+background-image: url(dengue.jpg)
+background-size: contain
+
+---
+class: middle, center
+# `denguedatahub` R package installation
+
+
+```{r, out.width = "300px", echo=FALSE, fig.pos="center"}
+knitr::include_graphics("https://denguedatahub.netlify.app/logo.png")
+```
+
+
+`install.packages("denguedatahub")`
+
+`library(denguedatahub)`
+
+
+
+
+---
+
+### District-wise Weekly Dengue cases from 2006 to 2023 - August
+
+```{r, comment=NA, message=FALSE, warning=FALSE}
+library(denguedatahub)
+library(tsibble)
+srilanka_weekly_data
+```
+
+---
+class: middle, center
+
+# Data visualization serves as a prerequisite for modeling.
+
+--
+
+## why?
+
+--
+
+It plays a crucial role in helping us better **grasp the patterns**, **relationships**, and **essential characteristics** of the data we're working with, making it easier to create accurate and effective models.
+
+---
+
+# Static chart
+
+```{r, echo=FALSE, fig.width=15}
+p1 <- srilanka_weekly_data %>%  
+ggplot(aes(x=start.date, y=cases, col=district,
+           group=district)) + geom_line()
+p1
+```
+
+---
+
+# Interactive chart
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=15}
+library(plotly)
+ggplotly(p1)
+```
+
+---
+
+```{r, echo=FALSE, fig.width=15}
+srilanka_weekly_data %>%  
+ggplot(aes(x=start.date, y=cases)) + geom_line()  + 
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  facet_wrap(vars(district), scales = "free_y", ncol=5)
+```
+
+---
+
+
+#### Number of series: 1
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, comment=NA}
+library(tidyverse)
+library(coronavirus)
+coronavirus <- coronavirus %>% mutate(cases = replace(cases, which(cases<0), NA))
+coronavirus <- coronavirus %>% mutate(cases = replace(cases, which(cases>800000), 800))
+#confirmed <- coronavirus %>% filter(type == "confirmed")
+confirmed <- coronavirus %>% 
+  filter(type == "confirmed") %>%
+  group_by(country, date) %>%
+  summarise(cases = sum(cases)) 
+```
+
+```{r, echo=FALSE, fig.width=15, fig.height=6, warning=FALSE, message=FALSE}
+library(plotly)
+p <- ggplot(confirmed, aes(x=date, y=cases)) + geom_line(colour=NA) +  theme(legend.position = "none")
+p + geom_line(data = subset(confirmed,  country == "Norway"),color = "red") + theme(legend.position = "none") + ylim(c(0, 800)) + ylab("Sales")
+```
+
+---
+#### Number of series: 2
+
+```{r, echo=FALSE, fig.width=15, fig.height=6, warning=FALSE, message=FALSE}
+library(plotly)
+p <- ggplot(confirmed, aes(x=date, y=cases)) + geom_line(colour=NA) +  theme(legend.position = "none")
+p + geom_line(data = subset(confirmed,  country == "Norway"),color = "red") + geom_line(data = subset(confirmed,  country == "China"),color = "#7570b3") + theme(legend.position = "none") + ylim(c(0, 800)) + ylab("Sales")
+```
+
+
+---
+
+#### Number of series: 3
+
+```{r, echo=FALSE, fig.width=15, fig.height=6, warning=FALSE, message=FALSE}
+library(plotly)
+p <- ggplot(confirmed, aes(x=date, y=cases)) + geom_line(colour=NA) +  theme(legend.position = "none")
+p + geom_line(data = subset(confirmed,  country == "Norway"),color = "red") + geom_line(data = subset(confirmed,  country == "China"),color = "#7570b3") + geom_line(data = subset(confirmed,  country == "Australia"),color = "#1b9e77") +
+  theme(legend.position = "none") + ylim(c(0, 800)) + ylab("Sales")
+```
+
+---
+
+
+## Number of series: 10
+
+```{r, echo=FALSE, fig.width=15, fig.height=6, warning=FALSE, message=FALSE}
+library(plotly)
+p <- ggplot(confirmed, aes(x=date, y=cases)) + geom_line(colour=NA) +  theme(legend.position = "none")
+p + geom_line(data = subset(confirmed,  country == "Norway"),color = "red") + geom_line(data = subset(confirmed,  country == "China"),color = "#7570b3") + geom_line(data = subset(confirmed,  country == "Australia"),color = "#1b9e77") +
+  geom_line(data = subset(confirmed,  country == "Sri Lanka"),color = "#ff7f00") +
+  geom_line(data = subset(confirmed,  country == "Ireland"),color = "#6a3d9a") +
+  geom_line(data = subset(confirmed,  country == "Colombia"),color = "#1f78b4") +
+  geom_line(data = subset(confirmed,  country == "Russia"),color = "#b2df8a") +
+  geom_line(data = subset(confirmed,  country == "Mexico"),color = "#fdbf6f") +
+  geom_line(data = subset(confirmed,  country == "Canada"),color = "#fb9a99") +
+  geom_line(data = subset(confirmed,  country == "Poland"),color = "#cab2d6") +
+  theme(legend.position = "none") + ylim(c(0, 800)) + ylab("Sales")
+```
+
+---
+
+
+## Number of series: More than 100
+
+```{r, echo=FALSE, fig.width=15, fig.height=6, warning=FALSE, message=FALSE}
+library(plotly)
+p <- ggplot(confirmed, aes(x=date, y=cases, colour=country)) + geom_line() +  theme(legend.position = "none")
+p + theme(legend.position = "none") + ylim(c(0, 800)) + ylab("Sales")
+```
+
+
+---
+background-image: url(https://thiyanga.netlify.app/post/positimages/site.png)
+background-size: contain
+
+# Posit conf::2023, Hyatt Regency in Chicago, Illinois, USA 
+
+---
+background-image: url(usgs.png)
+background-size: contain
+---
+class: middle, center
+
+# Handling **Massive Collection** of 
+# **Time Series Data** with 
+# **Feature Engineering**
+
+---
+
+
+
+background-image: url(img/tukey.jpeg)
+background-size: 200px
+background-position: 100% 6%
+
+# Time series features
+
+- **Cognostics**: **Co**mputer-aided dia**gnostics** (John W. Tukey, 1985)
+
+- Characteristics of time series
+
+- Summary measures of time series
+
+
+**Basic Principle**
+
+- Transform a given time series $y=\{y_1, y_2, \cdots, y_n\}$ into a feature vector $F = (f_1(y), f_2(y), \cdots, f_p(y))'$. 
+
+
+---
+
+.pull-left[
+#### Time-domain representation
+
+```{r, comment=NA, message=FALSE, warning=FALSE, echo=FALSE}
+library(Mcomp)
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(ggrepel)
+library(png)
+library(tsfeatures)
+library(tidyverse)
+library(ggpubr)
+# Extract required series
+series_id <- c("N0001", "N0633", "N0625", "N0645","N1912", "N2012")
+color = c("#1b9e77", "#d95f02", "#7570b3", "#e7298a", "#66a61e", "#e6ab02")
+model <- c("Random walk with drift", "NAIVE", "Random walk with drift", "NAIVE", "ETS", "SARIMA")
+six_series <- lapply(M3[series_id], function(u){u$x})
+p <- lapply(six_series,
+function(u) {autoplot(u) + xlab("") + ylab("")}
+)
+for (i in seq_along(six_series))
+p[[i]] <- p[[i]] +geom_line(color=color[i]) +ggtitle(series_id[i], model[i])+theme(title =element_text(size=10, face='bold'))
+grid.arrange(grobs = p, ncol = 2)
+```
+
+]
+
+--
+
+.pull-right[
+
+#### Time series features
+
+- Strength of trend
+
+
+- Strength of seasonality
+
+
+
+```{r, comment=NA, message=FALSE, warning=FALSE, echo=FALSE}
+df <- tsfeatures(six_series, c("stl_features")) %>%
+  select(trend, seasonal_strength) %>%
+  rename(seasonality = seasonal_strength) %>%
+  replace_na(list(seasonality = 0))
+df$id <- names(six_series)
+
+df
+
+```
+
+]
