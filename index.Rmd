@@ -59,7 +59,7 @@ library(tsfeatures)
 
 
 
-## Updated Science-Wide Author Databases
+## Top-cited scientists
 
 On October 4, 2023, Elsevier released an updated dataset titled “Updated Science-Wide Author Databases of Standardized Citation Indicators,” following a comprehensive analysis conducted by a team of experts led by Professor John P. A. Ioannidis from Stanford University.
 
