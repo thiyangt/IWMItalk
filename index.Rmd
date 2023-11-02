@@ -57,6 +57,24 @@ library(tidyverse)
 library(tsfeatures)
 ```
 
+---
+
+## Updated Science-Wide Author Databases
+
+On October 4, 2023, Elsevier released an updated dataset titled “Updated Science-Wide Author Databases of Standardized Citation Indicators,” following a comprehensive analysis conducted by a team of experts led by Professor John P. A. Ioannidis from Stanford University.
+
+
+Link: [https://thiyangt.github.io/citation/](
+https://thiyangt.github.io/citation/
+)
+
+
+---
+
+![](demo.gif)
+
+---
+
 # About me
 
 - PhD in Statistics and Mathematics, Monash University, Australia
@@ -81,6 +99,7 @@ Algorithm Selection, Open-science, Reproducible Research
 --
 
 November, 2023 highlights: [#30DayMapChallenge](https://30daymapchallenge.com/)
+
 
 
 ---
