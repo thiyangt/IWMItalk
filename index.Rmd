@@ -1,5 +1,5 @@
 ---
-title: "Handling Massive Collection of Time Series Data with Feature Engineering"
+title: "Handling Massive Collections of Time Series Data with Feature Engineering"
 subtitle: "International Water Management Institute (IWMI)"
 author: "Thiyanga S. Talagala"
 date: "`r Sys.Date()`"
@@ -76,7 +76,7 @@ library(tsfeatures)
 --
 
 Current research interests: Time Series Analysis, Data Visualization, Machine Learning, Machine Learning Interpretability,
-Algorithm Selection
+Algorithm Selection, Open-science, Reproducible Research
 
 --
 
@@ -86,7 +86,7 @@ November, 2023 highlights: [#30DayMapChallenge](https://30daymapchallenge.com/)
 ---
 class: middle, center,
 
-# Handling Massive Collection of 
+# Handling Massive Collections of 
 # Time Series Data with 
 # Feature Engineering
 
@@ -94,14 +94,14 @@ class: middle, center,
 
 class: middle, center,
 
-# Handling **Massive Collection** of 
+# Handling **Massive Collections** of 
 # Time Series Data with 
 # Feature Engineering
 
 ---
 class: middle, center
 
-# Handling **Massive Collection** of 
+# Handling **Massive Collections** of 
 # **Time Series Data** with 
 # Feature Engineering
 
@@ -267,7 +267,7 @@ background-size: contain
 ---
 class: middle, center
 
-# Handling **Massive Collection** of 
+# Handling **Massive Collections** of 
 # **Time Series Data** with 
 # **Feature Engineering**
 
@@ -348,3 +348,495 @@ df
 ```
 
 ]
+
+
+---
+# STL decomposition
+
+.pull-left[
+
+
+```{r, comment=NA, message=FALSE, warning=FALSE, echo=FALSE}
+x <-as.ts(M3[2012]$N2012$x, freq=12)
+x |>
+ stl(t.window=13, s.window="periodic", robust=TRUE) |>
+ autoplot()
+
+```
+
+
+]
+
+
+
+.pull-right[
+
+
+$$y_t = T_t + S_t + R_t$$
+
+$$F_T = max \left(0, 1 - \frac{Var(R_t)}{Var(T_t + R_t)} \right)$$
+
+$$F_S = max \left(0, 1 - \frac{Var(R_t)}{Var(S_t + R_t)} \right)$$
+
+]
+
+STL is an acronym for “Seasonal and Trend decomposition using Loess”. More info click [here](https://otexts.com/fpp2/stl.html).
+
+---
+
+
+.pull-left[
+#### Time-domain representation
+
+```{r, comment=NA, message=FALSE, warning=FALSE, echo=FALSE}
+library(Mcomp)
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(ggrepel)
+library(png)
+library(tsfeatures)
+library(tidyverse)
+library(ggpubr)
+# Extract required series
+series_id <- c("N0001", "N0633", "N0625", "N0645","N1912", "N2012")
+color = c("#1b9e77", "#d95f02", "#7570b3", "#e7298a", "#66a61e", "#e6ab02")
+six_series <- lapply(M3[series_id], function(u){u$x})
+p <- lapply(six_series,
+function(u) {autoplot(u) + xlab("") + ylab("")}
+)
+for (i in seq_along(six_series))
+p[[i]] <- p[[i]] +geom_line(color=color[i]) +ggtitle(series_id[i])+theme(title =element_text(size=10, face='bold'))
+grid.arrange(grobs = p, ncol = 2)
+```
+
+]
+
+--
+
+.pull-right[
+
+#### Feature-domain representation
+
+```{r, comment=NA, message=FALSE, warning=FALSE, echo=FALSE}
+df <- tsfeatures(six_series, c("stl_features")) %>%
+  select(trend, seasonal_strength) %>%
+  rename(seasonality = seasonal_strength) %>%
+  replace_na(list(seasonality = 0))
+df$id <- names(six_series)
+ggplot(df, aes(x = trend, y = seasonality)) +
+  geom_point(size = 5, color = c("#1b9e77", "#d95f02", "#7570b3", "#e7298a", "#66a61e", "#e6ab02")) +
+  xlim(0, 1) + ylim(0, 1) +
+  xlab("Strength of trend") + 
+  ylab("Strength of seasonality") + 
+  coord_fixed() +
+  geom_text_repel(
+    aes(label = id),
+    colour = "black",
+    size = 5,
+    box.padding = unit(0.5, "lines")
+  ) +
+  theme(legend.position = "none")
+```
+
+]
+
+---
+
+# R code
+
+```{r}
+six_series
+```
+
+---
+# R code
+
+```{r}
+library(tsfeatures)
+tsfeatures(six_series, c("stl_features")) |>
+  select(trend, seasonal_strength) 
+```
+
+---
+
+## Examples of time series features
+
+.pull-left[
+
+- length
+
+- strength of trend
+
+- strength of seasonality
+
+- lag-1 autocorrelation
+
+- spectral entropy
+
+- proportion of zeros
+
+- spikiness
+
+]
+
+.pull-right[
+
+- curvature
+
+- linearity
+
+- stability
+
+- number of peaks
+
+- parameter estimates of Holt-Winters' additive method
+
+- unit root test statistics
+
+]
+---
+
+# `tsfeatures` package
+
+.pull-left[
+
+## R installation
+
+```{r, fig.width=7, echo=FALSE, fig.pos="center"}
+knitr::include_graphics("r.png")
+```  
+
+`install.packages('tsfeatures')`
+
+]
+
+.pull-right[
+
+## Python installation
+
+```{r, fig.width=6, echo=FALSE, fig.pos="center"}
+knitr::include_graphics("python.png")
+```
+
+`pip install tsfeatures`
+
+
+]
+
+---
+
+## Example: tsfeatures in R
+
+```{r}
+tslist <- list(sunspot.year, WWWusage, AirPassengers, USAccDeaths)
+features <- tsfeatures(tslist)
+features
+
+```
+
+---
+
+# tidyverse
+
+```{r, warning=FALSE}
+library(tidyverse)
+```
+
+
+---
+#tidyver~se~
+
+```{r, warning=FALSE}
+library(tidyverse)
+```
+---
+#tidyverts
+
+![](feast.png)
+
+---
+
+## Large-scale time series visualization
+
+Demo: https://thiyangt.github.io/fformsviz/fforms.html
+
+[Short demo](https://twitter.com/i/status/1634754298377560064)
+
+[Dengue data visualization](https://denguedatahub.netlify.app/viz)
+
+---
+class: center, middle, inverse
+
+# Which time series features should be used?
+---
+
+```{r, echo=FALSE, fig.width=15, message=FALSE, warning=FALSE}
+library("sarima")
+set.seed(1228)
+x1 <- sim_sarima(n=144, model = list(ma=0.8)) + 10               # MA(1)
+x2 <- sim_sarima(n=144, model = list(ar=0.8))               # AR(1)
+x3 <- sim_sarima(n=144, model = list(ar=c(rep(0,11),0.6))) + 10 # SAR(1), 12  seasons
+x4 <- sim_sarima(n=144, model = list(ar=c(rep(0,11),0.6)))  # SMA(1)
+ts <- c(x1, x2, x3, x4)
+class <- as.factor(rep(1:4, each=144))
+time <- rep(1:144, times=4)
+dfts <- data.frame(ts, class, time)
+ggplot(dfts, aes(x=time, y=ts, group=class, col=class)) +
+  geom_line() 
+```
+
+---
+
+```{r, fig.width=15, message=FALSE, warning=FALSE, echo=FALSE}
+library("sarima")
+set.seed(1228)
+x1 <- sim_sarima(n=144, model = list(ma=0.8)) + 10               # MA(1)
+x2 <- sim_sarima(n=144, model = list(ar=0.8))               # AR(1)
+x3 <- sim_sarima(n=144, model = list(ar=c(rep(0,11),0.6))) + 10 # SAR(1), 12  seasons
+x4 <- sim_sarima(n=144, model = list(ar=c(rep(0,11),0.6)))  # SMA(1)
+ts <- c(x1, x2, x3, x4)
+class <- as.factor(rep(1:4, each=144))
+time <- rep(1:144, times=4)
+dfts <- data.frame(ts, class, time)
+ggplot(dfts, aes(x=time, y=ts, group=class, col=class)) +
+  geom_line() + scale_color_manual(values=c("red", "red", "black",  "black"))
+```
+
+---
+
+```{r, fig.width=15, message=FALSE, warning=FALSE, echo=FALSE}
+library("sarima")
+set.seed(1228)
+x1 <- sim_sarima(n=144, model = list(ar=0.8)) + 10               # MA(1)
+x2 <- sim_sarima(n=144, model = list(ar=0.8))               # AR(1)
+x3 <- sim_sarima(n=144, model = list(ar=c(rep(0,11),0.6))) + 10 # SAR(1), 12  seasons
+x4 <- sim_sarima(n=144, model = list(ar=c(rep(0,11),0.6)))  # SMA(1)
+ts <- c(x1, x2, x3, x4)
+class <- as.factor(rep(1:4, each=144))
+time <- rep(1:144, times=4)
+dfts <- data.frame(ts, class, time)
+ggplot(dfts, aes(x=time, y=ts, group=class, col=class)) +
+  geom_line() + scale_color_manual(values=c("red", "black", "red",  "black"))
+```
+
+---
+
+class: center, middle
+
+# Feature-based time series forecasting
+
+
+---
+
+class: inverse, center, middle
+background-image: url(img/f1.png)
+background-size: contain
+
+
+---
+class: inverse, center, middle
+background-image: url(img/f2.png)
+background-size: contain
+
+---
+class: inverse, center, middle
+background-image: url(img/f3.png)
+background-size: contain
+
+---
+class: inverse, center, middle
+background-image: url(img/f4.png)
+background-size: contain
+
+---
+class: inverse, center, middle
+background-image: url(img/f5.png)
+background-size: contain
+
+---
+class: inverse, center, middle
+background-image: url(img/f6.png)
+background-size: contain
+
+---
+class: inverse, center, middle
+background-image: url(img/f7.png)
+background-size: contain
+
+
+---
+class: inverse, center, middle
+background-image: url(img/f8.png)
+background-size: contain
+
+---
+class: inverse, center, middle
+background-image: url(img/f9.png)
+background-size: contain
+
+---
+class: inverse, center, middle
+background-image: url(img/f10.png)
+background-size: contain
+
+
+---
+class: inverse, center, middle
+background-image: url(img/f11.png)
+background-size: contain
+
+---
+class: inverse, center, middle
+background-image: url(img/f12.png)
+background-size: contain
+
+---
+class: inverse, center, middle
+background-image: url(img/f13.png)
+background-size: contain
+
+
+---
+
+
+
+### FFORMS: **F**eature-based **FOR**ecast **M**odel **S**election
+
+
+.pull-left[
+
+seer (magic ball)
+
+```{r   out.width = "50%", echo = FALSE, fig.cap=''}
+knitr::include_graphics("img/seer.png")
+```
+
+
+```{r, comment=NA, eval=FALSE}
+install.packages("seer")
+#library(devtools)
+#install_github("thiyangt/seer")
+library(seer)
+```
+
+]
+
+--
+
+.pull-right[
+
+Acropolis Museum, Athens, Greece
+
+```{r   out.width = "60%", echo = FALSE, fig.cap=''}
+knitr::include_graphics("img/greece.JPG")
+```
+
+
+
+]
+
+
+---
+class: inverse
+background-image: url(img/forest.jpg)
+background-size: cover
+
+## Random forest
+
+---
+class: center, inverse, middle
+background-image: url(img/forest.jpg)
+background-size: cover
+
+# Can we trust ML-algorithms if we don't know how it works?
+
+---
+class: inverse
+background-image: url(img/forest.jpg)
+background-size: cover
+
+# Peeking inside FFORMS Random forest
+
+---
+# Peeking inside FFORMS Random forest
+
+- Which features are the most important? 
+
+- Where are they important?
+
+- How are they important?
+
+--
+
+> Machine learning interpretability methods.
+
+
+Paper: Talagala, T. S., Hyndman, R. J., & Athanasopoulos, G. (2023). Meta‐learning how to forecast time series. Journal of Forecasting, 42(6), 1476-1501.
+---
+
+## Partial dependency plots for hourly data: entropy
+
+```{r   out.width="80%", echo = FALSE, fig.cap=''}
+knitr::include_graphics("entropy.png")
+```
+
+---
+## Recap
+
+--
+
+- Time series features
+
+--
+
+- Storing
+
+--
+- Data visualizzation
+
+--
+
+- Forecasting
+
+--
+
+- Clustering
+
+--
+- Anomaly detection
+
+---
+
+![](anomaly.png)
+
+
+---
+class: center, middle
+
+```{r, out.width = "800px", echo=FALSE, fig.pos="center"}
+knitr::include_graphics("anomaly.png")
+```
+
+Source: https://prital.netlify.app/talks/f4sg2023/f4sg-talk#5
+
+Contact: ~~Thiyanga~~ Priyanga Dilini Talagala
+---
+class: center, middle
+
+# Thank You!
+
+```{r, echo=FALSE}
+anicon::faa("twitter", animate="float", size=3, colour="lightblue")
+```
+
+```{r, echo=FALSE}
+anicon::faa("github", animate="float", size=3, colour="black")
+```
+
+# @thiyangt
+
+
+### web: https://thiyanga.netlify.app
+
+# email: ttalagala@sjp.ac.lk
